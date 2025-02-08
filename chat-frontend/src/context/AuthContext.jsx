@@ -1,3 +1,5 @@
+"use client"
+
 import { createContext, useState, useEffect } from "react"
 
 export const AuthContext = createContext()
@@ -59,6 +61,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user")
   }
 
-  return <AuthContext.Provider value={{ user, register, login, logout }}>{children}</AuthContext.Provider>
+  const updateUser = (updatedUserData) => {
+    const updatedUser = { ...user, ...updatedUserData }
+    setUser(updatedUser)
+    localStorage.setItem("user", JSON.stringify(updatedUser))
+  }
+
+  return <AuthContext.Provider value={{ user, register, login, logout, updateUser }}>{children}</AuthContext.Provider>
 }
 

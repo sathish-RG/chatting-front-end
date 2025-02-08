@@ -14,7 +14,7 @@ function GroupList({ onSelectGroup }) {
 
   useEffect(() => {
     fetchGroups()
-  }, []) // Removed unnecessary dependency: user
+  }, [])
 
   const fetchGroups = async () => {
     try {

@@ -13,9 +13,11 @@ function Profile() {
   const [bio, setBio] = useState(user.bio || "")
   const [profilePhoto, setProfilePhoto] = useState(null)
   const [previewPhoto, setPreviewPhoto] = useState(user.profilePhoto)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    // Fetch the latest user data
     const fetchUserData = async () => {
       try {
         const response = await fetch("http://localhost:5000/api/users/profile", {
@@ -23,16 +25,18 @@ function Profile() {
             Authorization: `Bearer ${user.token}`,
           },
         })
-        if (response.ok) {
-          const userData = await response.json()
-          setName(userData.name)
-          setEmail(userData.email)
-          setUsername(userData.username)
-          setBio(userData.bio || "")
-          setPreviewPhoto(userData.profilePhoto)
+        if (!response.ok) {
+          throw new Error("Failed to fetch user data")
         }
+        const userData = await response.json()
+        setName(userData.name)
+        setEmail(userData.email)
+        setUsername(userData.username)
+        setBio(userData.bio || "")
+        setPreviewPhoto(userData.profilePhoto)
       } catch (error) {
         console.error("Error fetching user data:", error)
+        setError("Failed to fetch user data. Please try again.")
       }
     }
     fetchUserData()
@@ -46,10 +50,16 @@ function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError("")
+    setSuccess("")
+    setIsLoading(true)
+
     if (password !== confirmPassword) {
-      alert("Passwords don't match")
+      setError("Passwords don't match")
+      setIsLoading(false)
       return
     }
+
     const formData = new FormData()
     formData.append("name", name)
     formData.append("email", email)
@@ -71,20 +81,27 @@ function Profile() {
         body: formData,
       })
       if (!response.ok) {
-        throw new Error("Failed to update profile")
+        const error = await response.json()
+        throw new Error(error.message || "Failed to update profile")
       }
       const updatedUser = await response.json()
       updateUser(updatedUser)
-      alert("Profile updated successfully")
+      setSuccess("Profile updated successfully")
+      setPassword("")
+      setConfirmPassword("")
     } catch (error) {
       console.error("Error updating profile:", error)
-      alert("Failed to update profile")
+      setError(error.message || "Failed to update profile. Please try again.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
     <div className="p-4 max-w-md mx-auto">
       <h2 className="text-2xl font-semibold mb-4">Edit Profile</h2>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {success && <p className="text-green-500 mb-4">{success}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center justify-center mb-4">
           <img
@@ -100,11 +117,11 @@ function Profile() {
             accept="image/*"
             onChange={handlePhotoChange}
             className="mt-1 block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100"
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
           />
         </div>
         <div>
@@ -185,9 +202,10 @@ function Profile() {
         <div>
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            Update Profile
+            {isLoading ? "Updating..." : "Update Profile"}
           </button>
         </div>
       </form>
